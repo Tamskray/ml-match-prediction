@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ML Прогноз Матчів</title>
+    <style>
+      /* Мінімалістичний стиль для форми */
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f7f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      button:hover {
+        background-color: #218838;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2em;
+        display: none;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2 style="text-align: center; margin-top: 0">⚽ ML Оракул</h2>
+
+      <div class="form-group">
+        <label for="attack">Сила атаки (0-100):</label>
+        <input type="number" id="attack" value="85" min="0" max="100" />
+      </div>
+
+      <div class="form-group">
+        <label for="defense">Сила захисту (0-100):</label>
+        <input type="number" id="defense" value="70" min="0" max="100" />
+      </div>
+
+      <div class="form-group">
+        <label for="home_advantage">Де грає команда?</label>
+        <select id="home_advantage">
+          <option value="1">Вдома</option>
+          <option value="0">На виїзді</option>
+        </select>
+      </div>
+
+      <button onclick="getPrediction()">Зробити прогноз</button>
+
+      <div id="result"></div>
+    </div>
+
+    <script>
+      async function getPrediction() {
+        // 1. Отримуємо значення з полів вводу
+        const attackVal = document.getElementById("attack").value;
+        const defenseVal = document.getElementById("defense").value;
+        const homeVal = document.getElementById("home_advantage").value;
+
+        const resultDiv = document.getElementById("result");
+
+        // Показуємо стан завантаження
+        resultDiv.style.display = "block";
+        resultDiv.className = "";
+        resultDiv.innerText = "Обчислюємо результат... ⏳";
+
+        try {
+          // 2. Відправляємо POST-запит на наш Node.js BFF
+          const response = await fetch("http://localhost:3000/api/forecast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              attack: attackVal,
+              defense: defenseVal,
+              home_advantage: homeVal,
+            }),
+          });
+
+          // 3. Читаємо відповідь від сервера
+          const data = await response.json();
+
+          // 4. Виводимо результат на екран
+          if (data.success) {
+            resultDiv.className = "success";
+            resultDiv.innerText = `Прогноз: ${data.prediction_text}`;
+          } else {
+            resultDiv.className = "error";
+            resultDiv.innerText = `Помилка: ${data.message}`;
+          }
+        } catch (error) {
+          console.error("Помилка з'єднання:", error);
+          resultDiv.className = "error";
+          resultDiv.innerText = "Не вдалося з'єднатися з сервером. Перевір, чи запущений Node.js!";
+        }
+      }
+    </script>
+  </body>
+</html>
