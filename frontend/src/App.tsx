@@ -10,7 +10,7 @@ import MatchBuilderPage from "@/pages/MatchBuilderPage";
 function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4 md:px-8">
+      <div className="mx-auto flex h-14 max-w-[1920px] items-center gap-6 px-4 md:px-8">
         {/* Brand */}
         <NavLink
           to="/"
@@ -54,7 +54,7 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Navbar />
-      <main className="mx-auto max-w-7xl">
+      <main className="mx-auto max-w-[1920px]">
         <Routes>
           <Route path="/" element={<MatchesPage />} />
           <Route path="/builder/:matchId" element={<MatchBuilderPage />} />

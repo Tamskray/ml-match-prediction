@@ -4,14 +4,17 @@ export interface PlayerCardProps {
   color: string;
   clipId: string;
   avatarUrl?: string;
+  name?: string;
+  number?: number;
+  onClick?: () => void;
   width?: number;
   height?: number;
   radius?: number;
 }
 
-export const PLAYER_CARD_WIDTH = 30;
-export const PLAYER_CARD_HEIGHT = 30;
-export const PLAYER_CARD_RADIUS = 5;
+export const PLAYER_CARD_WIDTH = 28;
+export const PLAYER_CARD_HEIGHT = 28;
+export const PLAYER_CARD_RADIUS = 6;
 
 // Clean default avatar SVG (data URI)
 const DEFAULT_AVATAR =
@@ -23,6 +26,9 @@ export function PlayerCard({
   color,
   clipId,
   avatarUrl,
+  name,
+  number,
+  onClick,
   width = PLAYER_CARD_WIDTH,
   height = PLAYER_CARD_HEIGHT,
   radius = PLAYER_CARD_RADIUS,
@@ -32,7 +38,11 @@ export function PlayerCard({
   const imageHref = avatarUrl || DEFAULT_AVATAR;
 
   return (
-    <g>
+    <g
+      onClick={onClick}
+      className={onClick ? "cursor-pointer group" : undefined}
+      style={{ pointerEvents: "all" }}
+    >
       {/* All content clipped to the rounded-rect card shape */}
       <g clipPath={`url(#${clipId})`}>
         {/* Dark card background */}
@@ -62,7 +72,28 @@ export function PlayerCard({
         fill="none"
         stroke={color}
         strokeWidth={1.5}
+        className={
+          onClick
+            ? "transition-[stroke,stroke-width] duration-150 group-hover:stroke-white group-hover:stroke-2"
+            : undefined
+        }
       />
+
+      {/* ── Player Name & Jersey Number label underneath card ── */}
+      {(name || number !== undefined) && (
+        <text
+          x={cx}
+          y={y + height + 10}
+          textAnchor="middle"
+          fontSize={6.5}
+          fontWeight="700"
+          fill="#f8fafc"
+          className="drop-shadow-md select-none transition-colors group-hover:fill-sky-300"
+        >
+          {number !== undefined ? `${number} ` : ""}
+          {name ?? ""}
+        </text>
+      )}
     </g>
   );
 }

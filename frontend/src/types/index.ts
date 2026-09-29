@@ -10,6 +10,20 @@ export interface Team {
   color: string;
 }
 
+export interface Player {
+  id: string;
+  name: string; // e.g. "B. Saka" or "V. Dragomir"
+  fullName: string; // e.g. "Bukayo Saka"
+  teamId: string;
+  number: number; // Jersey number e.g. 7
+  position: string; // Position label e.g. "RW", "ST", "GK", "CM"
+  goals: number;
+  assists: number;
+  height: string; // e.g. "1.79 m"
+  weight: string; // e.g. "72 kg"
+  avatarUrl?: string; // Optional avatar photo URL
+}
+
 export interface Match {
   id: string;
   homeTeam: Team;

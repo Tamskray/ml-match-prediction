@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, BrainCircuit, CloudRain, CloudSnow, Loader2, Sun, Zap } from "lucide-react";
+import {
+  ArrowLeft,
+  BrainCircuit,
+  CloudRain,
+  CloudSnow,
+  Loader2,
+  Sun,
+  Zap,
+  Users,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +26,9 @@ import {
   PLAYER_CARD_HEIGHT,
   PLAYER_CARD_RADIUS,
 } from "@/components/PlayerCard";
-import { MOCK_MATCHES, MOCK_PREDICTIONS } from "@/data/mocks";
-import type { Formation, Match, Prediction, Weather } from "@/types";
+import { PlayerDetailDrawer } from "@/components/PlayerDetailDrawer";
+import { MOCK_MATCHES, MOCK_PREDICTIONS, getTeamPlayers } from "@/data/mocks";
+import type { Formation, Match, Player, Prediction, Team, Weather } from "@/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -112,27 +122,22 @@ const FORMATION_POSITIONS: Record<Formation, PlayerPos[]> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const P = {
-  // Bounds
   x1: 20,
   y1: 14,
   x2: 320,
   y2: 566,
   w: 300,
   h: 552,
-  // Center
   cx: 170,
   cy: 290,
-  // Half-pitch depth (center → goal, minus small padding)
   halfD: 272,
-  // Markings (proportional to 105m × 68m pitch)
   penW: 178,
-  penH: 87, // penalty area
+  penH: 87,
   sixW: 81,
-  sixH: 29, // 6-yard box
-  goalW: 33, // goal width
-  ccR: 48, // center circle radius
-  spotD: 58, // penalty spot distance from goal line
-  // Player card
+  sixH: 29,
+  goalW: 33,
+  ccR: 48,
+  spotD: 58,
   CW: PLAYER_CARD_WIDTH,
   CH: PLAYER_CARD_HEIGHT,
   CR: PLAYER_CARD_RADIUS,
@@ -159,149 +164,245 @@ interface PitchFormationViewProps {
   match: Match;
   homeFormation: Formation;
   awayFormation: Formation;
+  homePlayers: Player[];
+  awayPlayers: Player[];
+  onSelectPlayer: (player: Player, team: Team) => void;
 }
 
-function PitchFormationView({ match, homeFormation, awayFormation }: PitchFormationViewProps) {
-  const homePlayers = FORMATION_POSITIONS[homeFormation];
-  const awayPlayers = FORMATION_POSITIONS[awayFormation];
+function PitchFormationView({
+  match,
+  homeFormation,
+  awayFormation,
+  homePlayers,
+  awayPlayers,
+  onSelectPlayer,
+}: PitchFormationViewProps) {
+  const homePositions = FORMATION_POSITIONS[homeFormation];
+  const awayPositions = FORMATION_POSITIONS[awayFormation];
 
   const penX = P.cx - P.penW / 2;
   const sixX = P.cx - P.sixW / 2;
   const goalX = P.cx - P.goalW / 2;
 
-  // Pre-compute player coordinates for defs
-  const homeCoords = homePlayers.map(([fx, fy]) => ({
+  // Pre-compute player coordinates
+  const homeCoords = homePositions.map(([fx, fy]) => ({
     cx: pitchPlayerX(fx),
     cy: homePlayerY(fy),
   }));
-  const awayCoords = awayPlayers.map(([fx, fy]) => ({
+  const awayCoords = awayPositions.map(([fx, fy]) => ({
     cx: awayPlayerX(fx),
     cy: awayPlayerY(fy),
   }));
 
-  return (
-    <div className="w-full flex flex-col gap-3">
-      {/* Team legend */}
-      <div className="flex items-center justify-between px-1">
+  // Helper component for side roster items
+  const RosterList = ({ team, players }: { team: Team; players: Player[] }) => (
+    <div className="flex flex-col gap-1.5 h-full overflow-y-auto pr-1">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80 mb-1">
         <div className="flex items-center gap-2">
           <div
             className="h-3 w-3 rounded-full border border-white/30"
+            style={{ backgroundColor: team.color }}
+          />
+          <span className="text-xs font-bold text-slate-200">{team.name} XI</span>
+        </div>
+        <Badge
+          variant="outline"
+          className="text-[10px] px-1.5 py-0 border-slate-700 text-slate-400"
+        >
+          Starting 11
+        </Badge>
+      </div>
+      {players.slice(0, 11).map((player) => (
+        <button
+          key={player.id}
+          type="button"
+          onClick={() => onSelectPlayer(player, team)}
+          className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 hover:bg-slate-700/60 border border-slate-800 transition-all text-left group"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white shrink-0"
+              style={{ backgroundColor: team.color }}
+            >
+              #{player.number}
+            </span>
+            <div className="truncate">
+              <p className="text-xs font-medium text-slate-200 group-hover:text-sky-300 truncate">
+                {player.name}
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono">{player.position}</p>
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono text-right shrink-0">
+            <span>{player.goals}G</span> <span className="text-slate-600">/</span>{" "}
+            <span>{player.assists}A</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Team header legend */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3.5 w-3.5 rounded-full border border-white/30"
             style={{ backgroundColor: match.awayTeam.color }}
           />
-          <span className="text-xs font-semibold text-slate-300">
+          <span className="text-xs font-bold text-slate-300">
             {match.awayTeam.name}
             <span className="ml-1.5 text-slate-500 font-normal">({awayFormation})</span>
           </span>
         </div>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+          <Users className="h-3.5 w-3.5 text-slate-400" />
+          <span>Click player card or roster to inspect stats</span>
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-300">
+          <span className="text-xs font-bold text-slate-300">
             {match.homeTeam.name}
             <span className="ml-1.5 text-slate-500 font-normal">({homeFormation})</span>
           </span>
           <div
-            className="h-3 w-3 rounded-full border border-white/30"
+            className="h-3.5 w-3.5 rounded-full border border-white/30"
             style={{ backgroundColor: match.homeTeam.color }}
           />
         </div>
       </div>
 
-      {/* Pitch SVG */}
-      <svg
-        viewBox="0 0 340 580"
-        className="w-full rounded-lg"
-        style={{ maxHeight: 620 }}
-        aria-label="Football pitch formation view"
-      >
-        {/* ── Define clip paths for every player card ── */}
-        <defs>
-          {homeCoords.map(({ cx, cy }, i) => (
-            <clipPath key={`clip-h-${i}`} id={`clip-h-${i}`}>
-              <rect x={cx - P.CW / 2} y={cy - P.CH / 2} width={P.CW} height={P.CH} rx={P.CR} />
-            </clipPath>
-          ))}
-          {awayCoords.map(({ cx, cy }, i) => (
-            <clipPath key={`clip-a-${i}`} id={`clip-a-${i}`}>
-              <rect x={cx - P.CW / 2} y={cy - P.CH / 2} width={P.CW} height={P.CH} rx={P.CR} />
-            </clipPath>
-          ))}
-        </defs>
+      {/* ── 3-Column Layout: [Away Roster] | [Pitch SVG] | [Home Roster] ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        {/* Left Side Roster (Away Team) */}
+        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[620px]">
+          <RosterList team={match.awayTeam} players={awayPlayers} />
+        </div>
 
-        {/* ── Pitch surface ── */}
-        <rect x={0} y={0} width={340} height={580} fill="#0f172a" rx={8} />
+        {/* Center: Pitch SVG */}
+        <div className="lg:col-span-6 flex justify-center">
+          <svg
+            viewBox="0 0 340 580"
+            className="w-full max-w-[500px] rounded-lg shadow-xl"
+            style={{ maxHeight: 620 }}
+            aria-label="Football pitch formation view"
+          >
+            <defs>
+              <clipPath id="player-card-clip">
+                <rect x={-P.CW / 2} y={-P.CH / 2} width={P.CW} height={P.CH} rx={P.CR} />
+              </clipPath>
+            </defs>
 
-        {/* Alternating grass stripes */}
-        {Array.from({ length: 7 }).map((_, i) => (
-          <rect
-            key={i}
-            x={P.x1}
-            y={P.y1 + i * (P.h / 7)}
-            width={P.w}
-            height={P.h / 7}
-            fill={i % 2 === 0 ? "#14532d" : "#166534"}
-          />
-        ))}
+            {/* Pitch surface */}
+            <rect x={0} y={0} width={340} height={580} fill="#0f172a" rx={8} />
 
-        {/* ── Pitch markings (unified stroke color & no overlapping lines) ── */}
-        <g stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} fill="none">
-          {/* Pitch outer border */}
-          <rect x={P.x1} y={P.y1} width={P.w} height={P.h} />
+            {/* Alternating grass stripes */}
+            {Array.from({ length: 7 }).map((_, i) => (
+              <rect
+                key={i}
+                x={P.x1}
+                y={P.y1 + i * (P.h / 7)}
+                width={P.w}
+                height={P.h / 7}
+                fill={i % 2 === 0 ? "#14532d" : "#166534"}
+              />
+            ))}
 
-          {/* Center line & center circle */}
-          <line x1={P.x1} y1={P.cy} x2={P.x2} y2={P.cy} />
-          <circle cx={P.cx} cy={P.cy} r={P.ccR} />
-          <circle cx={P.cx} cy={P.cy} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
+            {/* ── Pitch markings (unified stroke color & no overlapping lines) ── */}
+            <g stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} fill="none">
+              <rect x={P.x1} y={P.y1} width={P.w} height={P.h} />
+              <line x1={P.x1} y1={P.cy} x2={P.x2} y2={P.cy} />
+              <circle cx={P.cx} cy={P.cy} r={P.ccR} />
+              <circle cx={P.cx} cy={P.cy} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
 
-          {/* ── Top penalty area (3-sided paths to avoid overlapping top goal line) ── */}
-          {/* Penalty box (left, bottom, right) */}
-          <path d={`M ${penX} ${P.y1} v ${P.penH} h ${P.penW} v ${-P.penH}`} />
-          {/* 6-yard box (left, bottom, right) */}
-          <path d={`M ${sixX} ${P.y1} v ${P.sixH} h ${P.sixW} v ${-P.sixH}`} />
-          {/* Top goal frame */}
-          <path d={`M ${goalX} ${P.y1} v -8 h ${P.goalW} v 8`} />
-          {/* Penalty spot */}
-          <circle cx={P.cx} cy={P.y1 + P.spotD} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
-          {/* Penalty arc */}
-          <path
-            d={`M ${P.cx - P.ccR} ${P.y1 + P.penH} A ${P.ccR} ${P.ccR} 0 0 0 ${P.cx + P.ccR} ${P.y1 + P.penH}`}
-          />
+              {/* Top penalty area */}
+              <path d={`M ${penX} ${P.y1} v ${P.penH} h ${P.penW} v ${-P.penH}`} />
+              <path d={`M ${sixX} ${P.y1} v ${P.sixH} h ${P.sixW} v ${-P.sixH}`} />
+              <path d={`M ${goalX} ${P.y1} v -8 h ${P.goalW} v 8`} />
+              <circle
+                cx={P.cx}
+                cy={P.y1 + P.spotD}
+                r={2}
+                fill="rgba(255,255,255,0.7)"
+                stroke="none"
+              />
+              <path
+                d={`M ${P.cx - P.ccR} ${P.y1 + P.penH} A ${P.ccR} ${P.ccR} 0 0 0 ${P.cx + P.ccR} ${P.y1 + P.penH}`}
+              />
 
-          {/* ── Bottom penalty area (3-sided paths to avoid overlapping bottom goal line) ── */}
-          {/* Penalty box (left, top, right) */}
-          <path d={`M ${penX} ${P.y2} v ${-P.penH} h ${P.penW} v ${P.penH}`} />
-          {/* 6-yard box (left, top, right) */}
-          <path d={`M ${sixX} ${P.y2} v ${-P.sixH} h ${P.sixW} v ${P.sixH}`} />
-          {/* Bottom goal frame */}
-          <path d={`M ${goalX} ${P.y2} v 8 h ${P.goalW} v -8`} />
-          {/* Penalty spot */}
-          <circle cx={P.cx} cy={P.y2 - P.spotD} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
-          {/* Penalty arc */}
-          <path
-            d={`M ${P.cx - P.ccR} ${P.y2 - P.penH} A ${P.ccR} ${P.ccR} 0 0 1 ${P.cx + P.ccR} ${P.y2 - P.penH}`}
-          />
-        </g>
+              {/* Bottom penalty area */}
+              <path d={`M ${penX} ${P.y2} v ${-P.penH} h ${P.penW} v ${P.penH}`} />
+              <path d={`M ${sixX} ${P.y2} v ${-P.sixH} h ${P.sixW} v ${P.sixH}`} />
+              <path d={`M ${goalX} ${P.y2} v 8 h ${P.goalW} v -8`} />
+              <circle
+                cx={P.cx}
+                cy={P.y2 - P.spotD}
+                r={2}
+                fill="rgba(255,255,255,0.7)"
+                stroke="none"
+              />
+              <path
+                d={`M ${P.cx - P.ccR} ${P.y2 - P.penH} A ${P.ccR} ${P.ccR} 0 0 1 ${P.cx + P.ccR} ${P.y2 - P.penH}`}
+              />
+            </g>
 
-        {/* ── Away players (top half, attacks downward) ── */}
-        {awayCoords.map(({ cx, cy }, i) => (
-          <PlayerCard
-            key={`away-${i}`}
-            cx={cx}
-            cy={cy}
-            color={match.awayTeam.color}
-            clipId={`clip-a-${i}`}
-          />
-        ))}
+            {/* ── Away players (top half, attacks downward) ── */}
+            {awayCoords.map(({ cx, cy }, i) => {
+              const player = awayPlayers[i];
+              return (
+                <g
+                  key={`away-${i}`}
+                  transform={`translate(${cx} ${cy})`}
+                  style={{
+                    transition: `transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 25}ms`,
+                  }}
+                >
+                  <PlayerCard
+                    cx={0}
+                    cy={0}
+                    color={match.awayTeam.color}
+                    clipId="player-card-clip"
+                    name={player?.name}
+                    number={player?.number}
+                    avatarUrl={player?.avatarUrl}
+                    onClick={player ? () => onSelectPlayer(player, match.awayTeam) : undefined}
+                  />
+                </g>
+              );
+            })}
 
-        {/* ── Home players (bottom half, attacks upward) ── */}
-        {homeCoords.map(({ cx, cy }, i) => (
-          <PlayerCard
-            key={`home-${i}`}
-            cx={cx}
-            cy={cy}
-            color={match.homeTeam.color}
-            clipId={`clip-h-${i}`}
-          />
-        ))}
-      </svg>
+            {/* ── Home players (bottom half, attacks upward) ── */}
+            {homeCoords.map(({ cx, cy }, i) => {
+              const player = homePlayers[i];
+              return (
+                <g
+                  key={`home-${i}`}
+                  transform={`translate(${cx} ${cy})`}
+                  style={{
+                    transition: `transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 25}ms`,
+                  }}
+                >
+                  <PlayerCard
+                    cx={0}
+                    cy={0}
+                    color={match.homeTeam.color}
+                    clipId="player-card-clip"
+                    name={player?.name}
+                    number={player?.number}
+                    avatarUrl={player?.avatarUrl}
+                    onClick={player ? () => onSelectPlayer(player, match.homeTeam) : undefined}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Right Side Roster (Home Team) */}
+        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[620px]">
+          <RosterList team={match.homeTeam} players={homePlayers} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -415,12 +516,18 @@ export default function MatchBuilderPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
 
-  // Track the previous matchId so we can reset derived state during render
-  // instead of inside an effect — this avoids cascading renders.
+  // Selected player for detail drawer
+  const [selectedPlayer, setSelectedPlayer] = useState<{
+    player: Player;
+    team: Team;
+  } | null>(null);
+
+  // Track previous matchId for derived state reset
   const [prevMatchId, setPrevMatchId] = useState(matchId);
   if (prevMatchId !== matchId) {
     setPrevMatchId(matchId);
     setPrediction(null);
+    setSelectedPlayer(null);
   }
 
   if (!match) {
@@ -433,6 +540,9 @@ export default function MatchBuilderPage() {
       </div>
     );
   }
+
+  const homePlayers = getTeamPlayers(match.homeTeam.id, match.homeTeam.name);
+  const awayPlayers = getTeamPlayers(match.awayTeam.id, match.awayTeam.name);
 
   function handleGenerate() {
     setIsLoading(true);
@@ -468,10 +578,10 @@ export default function MatchBuilderPage() {
         </h1>
       </div>
 
-      {/* ── Row 1: Settings + Pitch ── */}
+      {/* ── Row 1: Settings (3/12) + Pitch & Rosters (9/12) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Inputs (4/12) */}
-        <div className="lg:col-span-4">
+        {/* Left: Inputs (3/12) */}
+        <div className="lg:col-span-3">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
               <CardTitle className="text-sm font-semibold uppercase tracking-widest text-slate-400">
@@ -567,12 +677,12 @@ export default function MatchBuilderPage() {
           </Card>
         </div>
 
-        {/* Right: Pitch Formation View (8/12) */}
-        <div className="lg:col-span-8">
+        {/* Right: Pitch Formation View (9/12) */}
+        <div className="lg:col-span-9">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
               <CardTitle className="text-sm font-semibold uppercase tracking-widest text-slate-400">
-                Tactical Formation
+                Tactical Formation & Rosters
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -580,6 +690,9 @@ export default function MatchBuilderPage() {
                 match={match}
                 homeFormation={homeFormation}
                 awayFormation={awayFormation}
+                homePlayers={homePlayers}
+                awayPlayers={awayPlayers}
+                onSelectPlayer={(player, team) => setSelectedPlayer({ player, team })}
               />
             </CardContent>
           </Card>
@@ -609,6 +722,13 @@ export default function MatchBuilderPage() {
           </Card>
         </div>
       )}
+
+      {/* Player detail drawer */}
+      <PlayerDetailDrawer
+        player={selectedPlayer?.player ?? null}
+        team={selectedPlayer?.team ?? null}
+        onClose={() => setSelectedPlayer(null)}
+      />
     </div>
   );
 }
