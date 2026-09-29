@@ -241,109 +241,44 @@ function PitchFormationView({ match, homeFormation, awayFormation }: PitchFormat
           />
         ))}
 
-        {/* Pitch border */}
-        <rect
-          x={P.x1}
-          y={P.y1}
-          width={P.w}
-          height={P.h}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
+        {/* ── Pitch markings (unified stroke color & no overlapping lines) ── */}
+        <g stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} fill="none">
+          {/* Pitch outer border */}
+          <rect x={P.x1} y={P.y1} width={P.w} height={P.h} />
 
-        {/* Center line */}
-        <line
-          x1={P.x1}
-          y1={P.cy}
-          x2={P.x2}
-          y2={P.cy}
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
+          {/* Center line & center circle */}
+          <line x1={P.x1} y1={P.cy} x2={P.x2} y2={P.cy} />
+          <circle cx={P.cx} cy={P.cy} r={P.ccR} />
+          <circle cx={P.cx} cy={P.cy} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
 
-        {/* Center circle */}
-        <circle
-          cx={P.cx}
-          cy={P.cy}
-          r={P.ccR}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-        <circle cx={P.cx} cy={P.cy} r={2} fill="rgba(255,255,255,0.6)" />
+          {/* ── Top penalty area (3-sided paths to avoid overlapping top goal line) ── */}
+          {/* Penalty box (left, bottom, right) */}
+          <path d={`M ${penX} ${P.y1} v ${P.penH} h ${P.penW} v ${-P.penH}`} />
+          {/* 6-yard box (left, bottom, right) */}
+          <path d={`M ${sixX} ${P.y1} v ${P.sixH} h ${P.sixW} v ${-P.sixH}`} />
+          {/* Top goal frame */}
+          <path d={`M ${goalX} ${P.y1} v -8 h ${P.goalW} v 8`} />
+          {/* Penalty spot */}
+          <circle cx={P.cx} cy={P.y1 + P.spotD} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
+          {/* Penalty arc */}
+          <path
+            d={`M ${P.cx - P.ccR} ${P.y1 + P.penH} A ${P.ccR} ${P.ccR} 0 0 0 ${P.cx + P.ccR} ${P.y1 + P.penH}`}
+          />
 
-        {/* ── Top penalty area (away defensive end) ── */}
-        <rect
-          x={penX}
-          y={P.y1}
-          width={P.penW}
-          height={P.penH}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-        <rect
-          x={sixX}
-          y={P.y1}
-          width={P.sixW}
-          height={P.sixH}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-        <rect
-          x={goalX}
-          y={P.y1 - 8}
-          width={P.goalW}
-          height={8}
-          fill="none"
-          stroke="rgba(255,255,255,0.35)"
-          strokeWidth={1.5}
-        />
-        <circle cx={P.cx} cy={P.y1 + P.spotD} r={2} fill="rgba(255,255,255,0.6)" />
-        <path
-          d={`M ${P.cx - P.ccR} ${P.y1 + P.penH} A ${P.ccR} ${P.ccR} 0 0 0 ${P.cx + P.ccR} ${P.y1 + P.penH}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-
-        {/* ── Bottom penalty area (home defensive end) ── */}
-        <rect
-          x={penX}
-          y={P.y2 - P.penH}
-          width={P.penW}
-          height={P.penH}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-        <rect
-          x={sixX}
-          y={P.y2 - P.sixH}
-          width={P.sixW}
-          height={P.sixH}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
-        <rect
-          x={goalX}
-          y={P.y2}
-          width={P.goalW}
-          height={8}
-          fill="none"
-          stroke="rgba(255,255,255,0.35)"
-          strokeWidth={1.5}
-        />
-        <circle cx={P.cx} cy={P.y2 - P.spotD} r={2} fill="rgba(255,255,255,0.6)" />
-        <path
-          d={`M ${P.cx - P.ccR} ${P.y2 - P.penH} A ${P.ccR} ${P.ccR} 0 0 1 ${P.cx + P.ccR} ${P.y2 - P.penH}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth={1.5}
-        />
+          {/* ── Bottom penalty area (3-sided paths to avoid overlapping bottom goal line) ── */}
+          {/* Penalty box (left, top, right) */}
+          <path d={`M ${penX} ${P.y2} v ${-P.penH} h ${P.penW} v ${P.penH}`} />
+          {/* 6-yard box (left, top, right) */}
+          <path d={`M ${sixX} ${P.y2} v ${-P.sixH} h ${P.sixW} v ${P.sixH}`} />
+          {/* Bottom goal frame */}
+          <path d={`M ${goalX} ${P.y2} v 8 h ${P.goalW} v -8`} />
+          {/* Penalty spot */}
+          <circle cx={P.cx} cy={P.y2 - P.spotD} r={2} fill="rgba(255,255,255,0.7)" stroke="none" />
+          {/* Penalty arc */}
+          <path
+            d={`M ${P.cx - P.ccR} ${P.y2 - P.penH} A ${P.ccR} ${P.ccR} 0 0 1 ${P.cx + P.ccR} ${P.y2 - P.penH}`}
+          />
+        </g>
 
         {/* ── Away players (top half, attacks downward) ── */}
         {awayCoords.map(({ cx, cy }, i) => (
