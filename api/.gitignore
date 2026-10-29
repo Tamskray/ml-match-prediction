@@ -58,3 +58,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 .env
 .env.develop
+/src/generated/prisma
+
+.agents/
+skills-lock.json
