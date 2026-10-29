@@ -123,21 +123,21 @@ const FORMATION_POSITIONS: Record<Formation, PlayerPos[]> = {
 
 const P = {
   x1: 20,
-  y1: 14,
-  x2: 320,
-  y2: 566,
-  w: 300,
-  h: 552,
-  cx: 170,
-  cy: 290,
-  halfD: 272,
-  penW: 178,
-  penH: 87,
-  sixW: 81,
-  sixH: 29,
-  goalW: 33,
-  ccR: 48,
-  spotD: 58,
+  y1: 16,
+  x2: 360,
+  y2: 624,
+  w: 340,
+  h: 608,
+  cx: 190,
+  cy: 320,
+  halfD: 298,
+  penW: 200,
+  penH: 96,
+  sixW: 90,
+  sixH: 32,
+  goalW: 38,
+  ccR: 54,
+  spotD: 64,
   CW: PLAYER_CARD_WIDTH,
   CH: PLAYER_CARD_HEIGHT,
   CR: PLAYER_CARD_RADIUS,
@@ -154,6 +154,65 @@ function awayPlayerY(fy: number) {
 }
 function awayPlayerX(fx: number) {
   return P.x1 + (1 - fx) * P.w;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RosterList
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RosterListProps {
+  team: Team;
+  players: Player[];
+  onSelectPlayer: (player: Player, team: Team) => void;
+}
+
+function RosterList({ team, players, onSelectPlayer }: RosterListProps) {
+  return (
+    <div className="flex flex-col gap-1.5 h-full overflow-y-auto pr-1">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80 mb-1">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 rounded-full border border-white/30"
+            style={{ backgroundColor: team.color }}
+          />
+          <span className="text-xs font-bold text-slate-200">{team.name} XI</span>
+        </div>
+        <Badge
+          variant="outline"
+          className="text-[10px] px-1.5 py-0 border-slate-700 text-slate-400"
+        >
+          Starting 11
+        </Badge>
+      </div>
+      {players.slice(0, 11).map((player) => (
+        <button
+          key={player.id}
+          type="button"
+          onClick={() => onSelectPlayer(player, team)}
+          className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 hover:bg-slate-700/60 border border-slate-800 transition-all text-left group"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white shrink-0"
+              style={{ backgroundColor: team.color }}
+            >
+              №{player.number}
+            </span>
+            <div className="truncate">
+              <p className="text-xs font-medium text-slate-200 group-hover:text-sky-300 truncate">
+                {player.name}
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono">{player.position}</p>
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono text-right shrink-0">
+            <span>{player.goals}G</span> <span className="text-slate-600">/</span>{" "}
+            <span>{player.assists}A</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,54 +253,6 @@ function PitchFormationView({
     cy: awayPlayerY(fy),
   }));
 
-  // Helper component for side roster items
-  const RosterList = ({ team, players }: { team: Team; players: Player[] }) => (
-    <div className="flex flex-col gap-1.5 h-full overflow-y-auto pr-1">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80 mb-1">
-        <div className="flex items-center gap-2">
-          <div
-            className="h-3 w-3 rounded-full border border-white/30"
-            style={{ backgroundColor: team.color }}
-          />
-          <span className="text-xs font-bold text-slate-200">{team.name} XI</span>
-        </div>
-        <Badge
-          variant="outline"
-          className="text-[10px] px-1.5 py-0 border-slate-700 text-slate-400"
-        >
-          Starting 11
-        </Badge>
-      </div>
-      {players.slice(0, 11).map((player) => (
-        <button
-          key={player.id}
-          type="button"
-          onClick={() => onSelectPlayer(player, team)}
-          className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 hover:bg-slate-700/60 border border-slate-800 transition-all text-left group"
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white shrink-0"
-              style={{ backgroundColor: team.color }}
-            >
-              #{player.number}
-            </span>
-            <div className="truncate">
-              <p className="text-xs font-medium text-slate-200 group-hover:text-sky-300 truncate">
-                {player.name}
-              </p>
-              <p className="text-[10px] text-slate-500 font-mono">{player.position}</p>
-            </div>
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono text-right shrink-0">
-            <span>{player.goals}G</span> <span className="text-slate-600">/</span>{" "}
-            <span>{player.assists}A</span>
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       {/* Team header legend */}
@@ -275,16 +286,16 @@ function PitchFormationView({
       {/* ── 3-Column Layout: [Away Roster] | [Pitch SVG] | [Home Roster] ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Left Side Roster (Away Team) */}
-        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[620px]">
-          <RosterList team={match.awayTeam} players={awayPlayers} />
+        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[700px]">
+          <RosterList team={match.awayTeam} players={awayPlayers} onSelectPlayer={onSelectPlayer} />
         </div>
 
         {/* Center: Pitch SVG */}
         <div className="lg:col-span-6 flex justify-center">
           <svg
-            viewBox="0 0 340 580"
-            className="w-full max-w-[500px] rounded-lg shadow-xl"
-            style={{ maxHeight: 620 }}
+            viewBox="0 0 380 640"
+            className="w-full max-w-[560px] rounded-lg shadow-xl"
+            style={{ maxHeight: 700 }}
             aria-label="Football pitch formation view"
           >
             <defs>
@@ -294,7 +305,7 @@ function PitchFormationView({
             </defs>
 
             {/* Pitch surface */}
-            <rect x={0} y={0} width={340} height={580} fill="#0f172a" rx={8} />
+            <rect x={0} y={0} width={380} height={640} fill="#0f172a" rx={8} />
 
             {/* Alternating grass stripes */}
             {Array.from({ length: 7 }).map((_, i) => (
@@ -399,8 +410,8 @@ function PitchFormationView({
         </div>
 
         {/* Right Side Roster (Home Team) */}
-        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[620px]">
-          <RosterList team={match.homeTeam} players={homePlayers} />
+        <div className="lg:col-span-3 hidden lg:block bg-slate-900/40 border border-slate-800 rounded-xl p-3 max-h-[700px]">
+          <RosterList team={match.homeTeam} players={homePlayers} onSelectPlayer={onSelectPlayer} />
         </div>
       </div>
     </div>

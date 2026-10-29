@@ -12,9 +12,9 @@ export interface PlayerCardProps {
   radius?: number;
 }
 
-export const PLAYER_CARD_WIDTH = 28;
-export const PLAYER_CARD_HEIGHT = 28;
-export const PLAYER_CARD_RADIUS = 6;
+export const PLAYER_CARD_WIDTH = 36;
+export const PLAYER_CARD_HEIGHT = 38;
+export const PLAYER_CARD_RADIUS = 7;
 
 // Clean default avatar SVG (data URI)
 const DEFAULT_AVATAR =
@@ -83,9 +83,9 @@ export function PlayerCard({
       {(name || number !== undefined) && (
         <text
           x={cx}
-          y={y + height + 10}
+          y={y + height + 11}
           textAnchor="middle"
-          fontSize={6.5}
+          fontSize={8.5}
           fontWeight="700"
           fill="#f8fafc"
           className="drop-shadow-md select-none transition-colors group-hover:fill-sky-300"
