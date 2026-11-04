@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { ClubsModule } from './clubs/clubs.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { MatchesModule } from './matches/matches.module';
 // import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
@@ -24,6 +25,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     //   isGlobal: false, // if false, we need set this in specific modules
     // }),
     ClubsModule,
+    MatchesModule,
     PrismaModule,
   ],
   controllers: [AppController],
