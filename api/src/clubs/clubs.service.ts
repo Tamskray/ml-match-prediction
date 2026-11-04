@@ -15,20 +15,27 @@ export class ClubsService {
   async findAll(): Promise<Club[]> {
     const cacheKey = 'all_clubs';
 
-    const cachedClubs = await this.cache.get<Club[]>(cacheKey);
+    try {
+      const cachedClubs = await this.cache.get<Club[]>(cacheKey);
 
-    if (cachedClubs) {
-      console.log('Cache from memory');
-      return cachedClubs;
+      if (cachedClubs) {
+        console.log('Cache from Redis memory');
+        return cachedClubs;
+      }
+    } catch (error) {
+      console.warn('Redis read failed: ', (error as Error).message);
     }
 
-    console.log('NO cache');
-
-    const clubs = this.prisma.clubs.findMany({
+    console.log('NO cache, fetching from db');
+    const clubs = await this.prisma.clubs.findMany({
       orderBy: { name: 'asc' },
     });
 
-    await this.cache.set(cacheKey, clubs, 30000);
+    try {
+      await this.cache.set(cacheKey, clubs, 30000);
+    } catch (error) {
+      console.warn('Redis write failed: ', (error as Error).message);
+    }
 
     return clubs;
   }

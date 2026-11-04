@@ -62,3 +62,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 .agents/
 skills-lock.json
+
+# Redis notes
+REDIS_COMMANDS.md
