@@ -6,6 +6,22 @@ import { Prisma } from '@prisma/client';
 export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll() {
+    return this.prisma.matches.findMany({
+      orderBy: { match_date: 'asc' },
+    });
+  }
+
+  async findAllWithClubs() {
+    return this.prisma.matches.findMany({
+      orderBy: { match_date: 'asc' },
+      include: {
+        home_club: true,
+        away_club: true,
+      },
+    });
+  }
+
   // async scheduleDoubleHeader(homeClubId: string, awayClubId: string) {
   //   try {
   //     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {

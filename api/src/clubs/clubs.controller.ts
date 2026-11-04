@@ -31,6 +31,11 @@ export class ClubsController {
     return this.clubsService.findOne(id);
   }
 
+  @Get(':id/matches')
+  async getOneWithMatches(@Param('id', ParseUUIDPipe) id: string) {
+    return this.clubsService.findOneWithMatches(id);
+  }
+
   @Post()
   async create(@Body() body: CreateClubDto) {
     return this.clubsService.create(body);

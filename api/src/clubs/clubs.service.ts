@@ -45,6 +45,26 @@ export class ClubsService {
     return club;
   }
 
+  async findOneWithMatches(id: string) {
+    const club = await this.prisma.clubs.findUnique({
+      where: { id },
+      include: {
+        home_matches: {
+          orderBy: { match_date: 'asc' },
+        },
+        away_matches: {
+          orderBy: { match_date: 'asc' },
+        },
+      },
+    });
+
+    if (!club) {
+      throw new NotFoundException(`Club with ID ${id} not found`);
+    }
+
+    return club;
+  }
+
   async create(dto: CreateClubDto): Promise<Club> {
     return await this.prisma.clubs.create({
       data: dto,
