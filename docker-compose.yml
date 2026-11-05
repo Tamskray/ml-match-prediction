@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ml-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-match-prediction}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - ml_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    container_name: ml-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - ml_redis_data:/data
+
+volumes:
+  ml_postgres_data:
+  ml_redis_data:
