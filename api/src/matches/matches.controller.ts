@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { MatchesService } from './matches.service';
 
 // class ScheduleDoubleHeaderDto {
@@ -18,6 +18,11 @@ export class MatchesController {
   @Get('with-clubs')
   async getAllWithClubs() {
     return this.matchesService.findAllWithClubs();
+  }
+
+  @Post(':id/simulate')
+  async simulate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.matchesService.simulateMatch(id);
   }
 
   // @Post('double-header')

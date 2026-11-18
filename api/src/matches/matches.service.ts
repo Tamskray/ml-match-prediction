@@ -1,10 +1,15 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class MatchesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('match-processing') private readonly matchQueue: Queue,
+  ) {}
 
   async findAll() {
     return this.prisma.matches.findMany({
@@ -20,6 +25,24 @@ export class MatchesService {
         away_club: true,
       },
     });
+  }
+
+  async simulateMatch(matchId: string) {
+    const match = await this.prisma.matches.findUnique({
+      where: { id: matchId },
+    });
+
+    if (!match) throw new Error(`Match ${matchId} not found`);
+
+    console.log(`[Producer] Adding job to queue for match: ${matchId}`);
+
+    const job = await this.matchQueue.add(
+      'finish-match',
+      { matchId },
+      { delay: 5000 },
+    );
+
+    return { message: 'Match simulation queued', jobId: job.id };
   }
 
   // async scheduleDoubleHeader(homeClubId: string, awayClubId: string) {
